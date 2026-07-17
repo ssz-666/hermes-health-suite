@@ -50,7 +50,15 @@ final class BackgroundSyncService {
 
         var uploaded = 0
         for summary in summaries {
-            try await HermesCollectorClient.post(summary: summary, to: endpoint)
+            guard summary.hasMeaningfulMeasurements else {
+                continue
+            }
+            do {
+                try await HermesCollectorClient.post(summary: summary, to: endpoint)
+            } catch CollectorError.serverError(400, let body)
+                where body.localizedCaseInsensitiveContains("no non-zero health measurements") {
+                continue
+            }
             uploaded += 1
         }
 
@@ -87,6 +95,24 @@ final class BackgroundSyncService {
             try BGTaskScheduler.shared.submit(request)
         } catch {
             // iOS may reject scheduling until background refresh is available for the app.
+        }
+    }
+}
+
+private extension DailyHealthSummary {
+    var hasMeaningfulMeasurements: Bool {
+        [
+            steps,
+            activeEnergyKcal,
+            avgHeartRate,
+            restingHeartRate,
+            hrvSdnn,
+            sleepMinutes,
+            napMinutes,
+            workoutMinutes
+        ].contains { value in
+            guard let value else { return false }
+            return value != 0
         }
     }
 }
