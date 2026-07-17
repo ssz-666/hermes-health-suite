@@ -96,11 +96,7 @@ struct ContentView: View {
         do {
             UserDefaults.standard.set(collectorURL, forKey: "collectorURL")
             let uploaded = try await BackgroundSyncService.shared.syncRecentDays(reason: "manual")
-            let summaries = try await healthStore.readRecentSummaries(days: 7)
-            recentSummaries = summaries
-            lastSummary = summaries.last
-            summariesMessage = "已加载 \(summaries.count) 天本机健康摘要。"
-            await loadNutrition(for: summaries)
+            await loadRecentSummaries()
             isConnected = true
             status = "已成功同步 \(uploaded) 天数据到 Hermes。最新日期：\(lastSummary?.date ?? "--")。"
         } catch {
@@ -114,13 +110,23 @@ struct ContentView: View {
         defer { isLoadingSummaries = false }
 
         do {
-            let summaries = try await healthStore.readRecentSummaries(days: 14)
+            let response = try await HermesCollectorClient.fetchHealthHistory(days: 90, collectorEndpoint: collectorURL)
+            let summaries = response.summaries.map(\.dailySummary)
             recentSummaries = summaries
             lastSummary = summaries.last
-            summariesMessage = "已加载 \(summaries.count) 天本机健康摘要。"
+            summariesMessage = "已加载 \(summaries.count) 天 Hermes 历史记录。"
             await loadNutrition(for: summaries)
+            isConnected = true
         } catch {
-            summariesMessage = "请先授权健康数据，再刷新：\(error.localizedDescription)"
+            do {
+                let summaries = try await healthStore.readRecentSummaries(days: 14)
+                recentSummaries = summaries
+                lastSummary = summaries.last
+                summariesMessage = "Mac 收集器暂时不可用，已显示最近 \(summaries.count) 天本机健康摘要。"
+                await loadNutrition(for: summaries)
+            } catch {
+                summariesMessage = "请先授权健康数据，或确认 Mac 收集器在线：\(error.localizedDescription)"
+            }
         }
     }
 
@@ -1105,7 +1111,7 @@ private struct HistoryView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     PageHeader(
                         title: "历史记录",
-                        subtitle: "最近 HealthKit 健康摘要",
+                        subtitle: "Hermes 已同步健康记录",
                         icon: "chart.bar.xaxis",
                         isLoading: isLoading,
                         action: refresh

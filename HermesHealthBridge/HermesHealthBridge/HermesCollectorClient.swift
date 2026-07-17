@@ -174,6 +174,67 @@ struct NutritionDayResponse: Codable {
     var totals: NutritionTotals
 }
 
+struct CollectorHistoryResponse: Codable {
+    var ok: Bool
+    var source: String?
+    var days: Int?
+    var count: Int?
+    var summaries: [CollectorHistorySummary]
+}
+
+struct CollectorHistorySummary: Codable {
+    var date: String
+    var updatedAt: String?
+    var source: String?
+    var healthData: CollectorHealthData
+
+    enum CodingKeys: String, CodingKey {
+        case date
+        case updatedAt = "updated_at"
+        case source
+        case healthData
+    }
+
+    var dailySummary: DailyHealthSummary {
+        DailyHealthSummary(
+            date: date,
+            steps: healthData.steps,
+            activeEnergyKcal: healthData.activeEnergyKcal,
+            avgHeartRate: healthData.avgHeartRate,
+            restingHeartRate: healthData.restingHeartRate,
+            hrvSdnn: healthData.hrvSdnn,
+            sleepMinutes: healthData.sleepMinutes,
+            napMinutes: healthData.napMinutes,
+            workoutMinutes: healthData.workoutMinutes,
+            source: source ?? "HermesHealthBridge"
+        )
+    }
+}
+
+struct CollectorHealthData: Codable {
+    var steps: Double?
+    var activeEnergyKcal: Double?
+    var avgHeartRate: Double?
+    var restingHeartRate: Double?
+    var hrvSdnn: Double?
+    var sleepMinutes: Double?
+    var napMinutes: Double?
+    var workoutMinutes: Double?
+    var recoveryScore: Double?
+
+    enum CodingKeys: String, CodingKey {
+        case steps
+        case activeEnergyKcal = "active_energy_kcal"
+        case avgHeartRate = "avg_heart_rate"
+        case restingHeartRate = "resting_heart_rate"
+        case hrvSdnn = "hrv_sdnn"
+        case sleepMinutes = "sleep_minutes"
+        case napMinutes = "nap_minutes"
+        case workoutMinutes = "workout_minutes"
+        case recoveryScore = "recovery_score"
+    }
+}
+
 struct NutritionMeal: Codable, Identifiable {
     var id: Int?
     var date: String?
@@ -326,6 +387,16 @@ enum HermesCollectorClient {
         )
         let data = try await getData(from: url)
         return try JSONDecoder().decode(NutritionDayResponse.self, from: data)
+    }
+
+    static func fetchHealthHistory(days: Int, collectorEndpoint: String) async throws -> CollectorHistoryResponse {
+        let url = try serviceURL(
+            from: collectorEndpoint,
+            path: "/health/history",
+            queryItems: [URLQueryItem(name: "days", value: String(days))]
+        )
+        let data = try await getData(from: url)
+        return try JSONDecoder().decode(CollectorHistoryResponse.self, from: data)
     }
 
     private static func validatedURL(_ endpoint: String) throws -> URL {
