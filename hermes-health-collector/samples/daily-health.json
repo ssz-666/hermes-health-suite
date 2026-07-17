@@ -1,0 +1,11 @@
+{
+  "date": "2026-06-25",
+  "steps": 8421,
+  "active_energy_kcal": 512.4,
+  "avg_heart_rate": 78.2,
+  "resting_heart_rate": 59,
+  "hrv_sdnn": 43.7,
+  "sleep_minutes": 426,
+  "workout_minutes": 38,
+  "source": "iphone-shortcuts"
+}
