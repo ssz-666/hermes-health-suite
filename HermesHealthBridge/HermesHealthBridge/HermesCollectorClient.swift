@@ -326,7 +326,7 @@ enum HermesCollectorClient {
     }
 
     static func analyzeMealPhotoDirect(imageData: Data, profile: NutritionProfile, apiConfig: VisionAPIConfig) async throws -> MealPhotoAnalysisResponse {
-        let apiKey = apiConfig.apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let apiKey = normalizedAPIKey(apiConfig.apiKey)
         guard !apiKey.isEmpty else {
             throw CollectorError.missingAPIKey
         }
@@ -410,6 +410,14 @@ enum HermesCollectorClient {
         )
         let data = try await getData(from: url)
         return try JSONDecoder().decode(CollectorHistoryResponse.self, from: data)
+    }
+
+    private static func normalizedAPIKey(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("bearer ") {
+            return String(trimmed.dropFirst(7)).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return trimmed
     }
 
     private static func validatedURL(_ endpoint: String) throws -> URL {

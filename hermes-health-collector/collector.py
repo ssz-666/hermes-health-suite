@@ -553,7 +553,7 @@ def analyze_meal_photo(payload: dict[str, Any]) -> dict[str, Any]:
 
     config = payload.get("api_config") if isinstance(payload.get("api_config"), dict) else {}
     provider = str(config.get("provider") or "自定义").strip() or "自定义"
-    api_key = str(config.get("api_key") or "").strip()
+    api_key = normalize_api_key(config.get("api_key"))
     base_url = str(config.get("base_url") or "https://api.deepseek.com").strip().rstrip("/")
     model = str(config.get("model") or "deepseek-v4-pro").strip()
     if api_key:
@@ -571,6 +571,13 @@ def analyze_meal_photo(payload: dict[str, Any]) -> dict[str, Any]:
             "fat_g": None,
         },
     }
+
+
+def normalize_api_key(value: Any) -> str:
+    api_key = str(value or "").strip()
+    if api_key.lower().startswith("bearer "):
+        return api_key[7:].strip()
+    return api_key
 
 
 def analyze_meal_photo_with_provider(
