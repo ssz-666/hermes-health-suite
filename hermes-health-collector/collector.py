@@ -581,6 +581,14 @@ def analyze_meal_photo_with_provider(
     model: str,
     profile: Any,
 ) -> dict[str, Any]:
+    if provider == "DeepSeek":
+        return {
+            "ok": False,
+            "needs_manual_entry": True,
+            "error": "DeepSeek 当前接口不支持图片识别。请在 App 设置里切换到阿里通义、智谱 GLM 或豆包视觉模型。",
+            "debug_detail": "DeepSeek vision is not supported.",
+        }
+
     prompt = (
         "你是营养记录助手。请根据图片估算这顿饭的主要食物、总热量和三大营养素。"
         "只返回 JSON，不要解释。JSON 格式："
@@ -626,6 +634,11 @@ def analyze_meal_photo_with_provider(
                 f"{provider} 返回 HTTP 400：当前 Base URL/模型可能不接受图片输入，或模型名不是视觉模型。"
                 "这不是你的照片问题；请确认选择的是支持图片的视觉模型，并检查 Base URL 是否是 OpenAI-compatible 接口。"
                 "现在可以先手动填写食物和热量保存。"
+            )
+        elif exc.code == 401:
+            error = (
+                f"{provider} 返回 HTTP 401：鉴权失败。请检查 App 设置里的 API Key 是否属于当前供应商、"
+                "是否复制完整、是否已开通对应视觉模型；如果你选的是 DeepSeek，请切换到阿里通义、智谱 GLM 或豆包视觉模型。"
             )
         else:
             error = f"{provider} 返回 HTTP {exc.code}：{detail[:500]}"

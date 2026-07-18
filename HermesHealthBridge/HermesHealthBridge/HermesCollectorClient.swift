@@ -330,6 +330,13 @@ enum HermesCollectorClient {
         guard !apiKey.isEmpty else {
             throw CollectorError.missingAPIKey
         }
+        guard apiConfig.provider != "DeepSeek" else {
+            return MealPhotoAnalysisResponse(
+                ok: false,
+                error: "DeepSeek 当前接口不支持图片识别。请在设置里切换到阿里通义、智谱 GLM 或豆包视觉模型。",
+                suggestion: nil
+            )
+        }
 
         let url = try chatCompletionsURL(from: apiConfig.baseURL)
         let prompt = """
@@ -371,6 +378,12 @@ enum HermesCollectorClient {
         }
         guard (200..<300).contains(httpResponse.statusCode) else {
             let body = String(data: data, encoding: .utf8) ?? "没有返回内容"
+            if httpResponse.statusCode == 401 {
+                throw CollectorError.serverError(
+                    httpResponse.statusCode,
+                    "\(apiConfig.provider) 鉴权失败：请检查设置里的 API Key 是否属于当前供应商、是否已开通对应视觉模型、是否复制完整。服务返回：\(body)"
+                )
+            }
             throw CollectorError.serverError(httpResponse.statusCode, body)
         }
 
