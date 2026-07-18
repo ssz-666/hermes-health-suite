@@ -1778,7 +1778,7 @@ private enum VisionProviderDefaults {
     static func baseURL(for provider: String) -> String {
         switch provider {
         case "阿里通义":
-            return "https://dashscope.aliyuncs.com/compatible-mode/v1"
+            return "https://llm-16hw05s3eoql1hu3.cn-beijing.maas.aliyuncs.com/compatible-mode/v1"
         case "智谱 GLM":
             return "https://open.bigmodel.cn/api/paas/v4"
         case "豆包":
